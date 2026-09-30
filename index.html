@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notion Days Left Widget</title>
+  <style>
+    /* Basic reset and centering */
+    body {
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: transparent; /* Allows Notion's background to show through */
+      font-family: 'Georgia', serif; /* Matches the elegant serif look from the screenshot */
+    }
+
+    /* Top Header */
+    .header {
+      color: #F4B223;
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+    }
+
+    /* The Teal Number Box */
+    .countdown-box {
+      background-color: #009490;
+      border-radius: 8px;
+      padding: 12px 20px;
+      position: relative;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+      overflow: hidden; /* Ensures the split line stays inside the curved borders */
+    }
+
+    /* The horizontal line simulating a flip-clock */
+    .countdown-box::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: rgba(0, 0, 0, 0.25);
+      transform: translateY(-50%);
+    }
+
+    /* The White Numbers */
+    .countdown-value {
+      color: #ffffff;
+      font-size: 64px;
+      font-family: 'Arial', sans-serif; /* Bold sans-serif for numbers */
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 4px;
+      position: relative;
+      z-index: 1; /* Ensures the text sits nicely with the horizontal line */
+    }
+
+    /* Bottom Footer */
+    .footer {
+      color: #F4B223;
+      font-size: 20px;
+      margin-top: 16px;
+    }
+
+    /* Calendar Input Section */
+    .input-container {
+      margin-top: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: rgba(255, 255, 255, 0.8); /* Slight background so it's visible in dark mode */
+      padding: 10px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .input-container label {
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .input-container input[type="date"] {
+      color: black; /* Explicitly black text as requested */
+      font-size: 16px;
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Widget Display Section -->
+  <div class="header">DAYS LEFT</div>
+  
+  <div class="countdown-box">
+    <div class="countdown-value" id="daysValue">00</div>
+  </div>
+  
+  <div class="footer">Days</div>
+
+  <!-- User Input Section -->
+  <div class="input-container">
+    <label for="endDate">Select Target Date:</label>
+    <input type="date" id="endDate">
+  </div>
+
+  <script>
+    const dateInput = document.getElementById('endDate');
+    const daysValue = document.getElementById('daysValue');
+
+    // 1. Check if the user has previously saved a date
+    const savedDate = localStorage.getItem('notionTargetDate');
+    if (savedDate) {
+      dateInput.value = savedDate;
+      calculateDaysLeft(savedDate);
+    }
+
+    // 2. Listen for the user picking a new date from the calendar
+    dateInput.addEventListener('change', (e) => {
+      const selectedDate = e.target.value;
+      localStorage.setItem('notionTargetDate', selectedDate); // Save it to the browser
+      calculateDaysLeft(selectedDate);
+    });
+
+    // 3. The math to calculate the days
+    function calculateDaysLeft(targetDateString) {
+      if (!targetDateString) {
+        daysValue.textContent = "00";
+        return;
+      }
+      
+      // Treat the date input as a strict local midnight time
+      const target = new Date(targetDateString + 'T00:00:00');
+      
+      // Get today's date and strip the exact time so it accurately measures full days
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      // Subtract today from target date
+      const differenceInMilliseconds = target.getTime() - now.getTime();
+      
+      // Convert milliseconds into days
+      let days = Math.ceil(differenceInMilliseconds / (1000 * 3600 * 24));
+
+      // Prevent the counter from going into negative numbers if the date has passed
+      if (days < 0) days = 0;
+
+      // Add a leading zero if it's a single digit (e.g. '08' instead of '8')
+      daysValue.textContent = days.toString().padStart(2, '0');
+    }
+
+    // 4. Update automatically every 60 seconds (keeps it fresh if midnight passes while they have Notion open)
+    setInterval(() => {
+      if (dateInput.value) {
+        calculateDaysLeft(dateInput.value);
+      }
+    }, 60000);
+  </script>
+</body>
+</html>
